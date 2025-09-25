@@ -12,7 +12,7 @@ function authRequired() {
       if (!token) return res.status(401).json({ message: 'Unauthorized' });
       const payload = jwt.verify(token, JWT_SECRET);
       // fetch user to ensure still exists; select minimal fields
-      const user = await User.findById(payload.sub).select('_id name email role');
+      const user = await User.findById(payload.sub).select('_id name email role permissions');
       if (!user) return res.status(401).json({ message: 'Unauthorized' });
       req.user = user;
       next();
@@ -31,4 +31,15 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { authRequired, requireRole };
+function requirePermission(permission) {
+  return function (req, res, next) {
+    if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+    // Admins implicitly have all permissions
+    if (req.user.role === 'admin') return next();
+    const perms = Array.isArray(req.user.permissions) ? req.user.permissions : [];
+    if (!perms.includes(permission)) return res.status(403).json({ message: 'Forbidden' });
+    next();
+  };
+}
+
+module.exports = { authRequired, requireRole, requirePermission };
