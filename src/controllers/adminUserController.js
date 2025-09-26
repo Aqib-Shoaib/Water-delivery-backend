@@ -5,33 +5,33 @@ const ADMIN_BOOTSTRAP_SECRET = process.env.ADMIN_BOOTSTRAP_SECRET || '';
 // GET /api/admin/users
 async function list(req, res, next) {
   try {
-    const users = await User.find({}).sort({ createdAt: -1 }).limit(200);
+    const users = await User.find({}).populate('region', 'name').sort({ createdAt: -1 }).limit(200);
     res.json(users);
   } catch (err) { next(err); }
 }
 
 // POST /api/admin/users
-// body: { name, email, password, role, phone, permissions }
+// body: { name, email, password, role, phone, permissions, region }
 async function create(req, res, next) {
   try {
-    const { name, email, password, role = 'customer', phone, permissions = [] } = req.body;
+    const { name, email, password, role = 'customer', phone, permissions = [], region } = req.body;
     if (!name || !email || !password) return res.status(400).json({ message: 'name, email, password required' });
     if (!ROLES.includes(role)) return res.status(400).json({ message: 'invalid role' });
     const exists = await User.findOne({ email });
     if (exists) return res.status(409).json({ message: 'email already exists' });
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, passwordHash, role, phone, permissions });
+    const user = await User.create({ name, email, passwordHash, role, phone, permissions, region });
     res.status(201).json(user);
   } catch (err) { next(err); }
 }
 
 // PUT /api/admin/users/:id
-// body: can contain name, phone, role, permissions, password (optional)
+// body: can contain name, phone, role, permissions, region, password (optional)
 async function update(req, res, next) {
   try {
     const { id } = req.params;
     const updates = {};
-    const { name, phone, role, permissions, password } = req.body;
+    const { name, phone, role, permissions, password, region } = req.body;
     if (name !== undefined) updates.name = name;
     if (phone !== undefined) updates.phone = phone;
     if (role !== undefined) {
@@ -39,6 +39,7 @@ async function update(req, res, next) {
       updates.role = role;
     }
     if (Array.isArray(permissions)) updates.permissions = permissions;
+    if (region !== undefined) updates.region = region;
     if (password) updates.passwordHash = await bcrypt.hash(password, 10);
 
     // Prevent demoting the last remaining admin
