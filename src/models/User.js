@@ -9,6 +9,7 @@ const userSchema = new Schema(
     passwordHash: { type: String, required: true, select: false },
     role: { type: String, enum: ROLES, default: 'customer', index: true },
     phone: { type: String },
+    cnic: { type: String, unique: true, sparse: true, index: true },
     region: { type: Types.ObjectId, ref: 'Region', index: true },
     permissions: { type: [String], default: [], index: true },
   },

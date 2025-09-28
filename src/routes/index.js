@@ -11,6 +11,9 @@ const regions = require('./regions');
 const siteSettings = require('./siteSettings');
 const deals = require('./deals');
 const reminders = require('./reminders');
+const notifications = require('./notifications');
+const healthReminders = require('./healthReminders');
+const analytics = require('./analytics');
 
 const router = express.Router();
 
@@ -25,5 +28,8 @@ router.use('/regions', regions);
 router.use('/site-settings', siteSettings);
 router.use('/deals', deals);
 router.use('/reminders', reminders);
+router.use('/notifications', notifications);
+router.use('/health-reminders', healthReminders);
+router.use('/analytics', analytics);
 
 module.exports = router;

@@ -11,27 +11,31 @@ async function list(req, res, next) {
 }
 
 // POST /api/admin/users
-// body: { name, email, password, role, phone, permissions, region }
+// body: { name, email, password, role, phone, permissions, region, cnic }
 async function create(req, res, next) {
   try {
-    const { name, email, password, role = 'customer', phone, permissions = [], region } = req.body;
+    const { name, email, password, role = 'customer', phone, permissions = [], region, cnic } = req.body;
     if (!name || !email || !password) return res.status(400).json({ message: 'name, email, password required' });
     if (!ROLES.includes(role)) return res.status(400).json({ message: 'invalid role' });
     const exists = await User.findOne({ email });
     if (exists) return res.status(409).json({ message: 'email already exists' });
+    if (cnic) {
+      const cnicExists = await User.findOne({ cnic });
+      if (cnicExists) return res.status(409).json({ message: 'cnic already exists' });
+    }
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, passwordHash, role, phone, permissions, region });
+    const user = await User.create({ name, email, passwordHash, role, phone, permissions, region, cnic });
     res.status(201).json(user);
   } catch (err) { next(err); }
 }
 
 // PUT /api/admin/users/:id
-// body: can contain name, phone, role, permissions, region, password (optional)
+// body: can contain name, phone, role, permissions, region, password (optional), cnic
 async function update(req, res, next) {
   try {
     const { id } = req.params;
     const updates = {};
-    const { name, phone, role, permissions, password, region } = req.body;
+    const { name, phone, role, permissions, password, region, cnic } = req.body;
     if (name !== undefined) updates.name = name;
     if (phone !== undefined) updates.phone = phone;
     if (role !== undefined) {
@@ -41,6 +45,15 @@ async function update(req, res, next) {
     if (Array.isArray(permissions)) updates.permissions = permissions;
     if (region !== undefined) updates.region = region;
     if (password) updates.passwordHash = await bcrypt.hash(password, 10);
+    if (cnic !== undefined) {
+      if (cnic) {
+        const cnicExists = await User.findOne({ cnic, _id: { $ne: id } }).select('_id');
+        if (cnicExists) return res.status(409).json({ message: 'cnic already exists' });
+        updates.cnic = cnic;
+      } else {
+        updates.cnic = undefined;
+      }
+    }
 
     // Prevent demoting the last remaining admin
     if (updates.role && updates.role !== 'admin') {

@@ -31,7 +31,24 @@ async function get(req, res, next) {
 async function update(req, res, next) {
   try {
     const updates = {};
-    const { siteName, contactEmail, contactPhone, address, theme, logoUrl, whatsappLink, whatsappPhone } = req.body || {};
+    const {
+      siteName,
+      contactEmail,
+      contactPhone,
+      address,
+      theme,
+      logoUrl,
+      whatsappLink,
+      whatsappPhone,
+      customerAppName,
+      customerAppLogoUrl,
+      customerAppAndroidLink,
+      customerAppIOSLink,
+      driverAppName,
+      driverAppLogoUrl,
+      driverAppAndroidLink,
+      driverAppIOSLink,
+    } = req.body || {};
     if (siteName !== undefined) updates.siteName = siteName;
     if (contactEmail !== undefined) updates.contactEmail = contactEmail;
     if (contactPhone !== undefined) updates.contactPhone = contactPhone;
@@ -40,6 +57,15 @@ async function update(req, res, next) {
     if (logoUrl !== undefined) updates.logoUrl = logoUrl; // allow manual URL set
     if (whatsappLink !== undefined) updates.whatsappLink = whatsappLink;
     if (whatsappPhone !== undefined) updates.whatsappPhone = whatsappPhone;
+    // Mobile apps
+    if (customerAppName !== undefined) updates.customerAppName = customerAppName;
+    if (customerAppLogoUrl !== undefined) updates.customerAppLogoUrl = customerAppLogoUrl;
+    if (customerAppAndroidLink !== undefined) updates.customerAppAndroidLink = customerAppAndroidLink;
+    if (customerAppIOSLink !== undefined) updates.customerAppIOSLink = customerAppIOSLink;
+    if (driverAppName !== undefined) updates.driverAppName = driverAppName;
+    if (driverAppLogoUrl !== undefined) updates.driverAppLogoUrl = driverAppLogoUrl;
+    if (driverAppAndroidLink !== undefined) updates.driverAppAndroidLink = driverAppAndroidLink;
+    if (driverAppIOSLink !== undefined) updates.driverAppIOSLink = driverAppIOSLink;
     const settings = await SiteSetting.findByIdAndUpdate(SETTINGS_ID, updates, { new: true, upsert: true });
     res.json(settings);
   } catch (err) { next(err); }
@@ -57,4 +83,43 @@ async function uploadLogo(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { get, update, uploadLogo, uploadLogoMiddleware };
+// Upload customer app logo
+const uploadCustomerLogoMiddleware = upload.single('logo');
+async function uploadCustomerLogo(req, res, next) {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'logo file required' });
+    const publicUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    const settings = await SiteSetting.findByIdAndUpdate(
+      SETTINGS_ID,
+      { customerAppLogoUrl: publicUrl },
+      { new: true, upsert: true }
+    );
+    res.json({ customerAppLogoUrl: publicUrl, settings });
+  } catch (err) { next(err); }
+}
+
+// Upload driver app logo
+const uploadDriverLogoMiddleware = upload.single('logo');
+async function uploadDriverLogo(req, res, next) {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'logo file required' });
+    const publicUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    const settings = await SiteSetting.findByIdAndUpdate(
+      SETTINGS_ID,
+      { driverAppLogoUrl: publicUrl },
+      { new: true, upsert: true }
+    );
+    res.json({ driverAppLogoUrl: publicUrl, settings });
+  } catch (err) { next(err); }
+}
+
+module.exports = {
+  get,
+  update,
+  uploadLogo,
+  uploadLogoMiddleware,
+  uploadCustomerLogo,
+  uploadCustomerLogoMiddleware,
+  uploadDriverLogo,
+  uploadDriverLogoMiddleware,
+};
