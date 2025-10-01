@@ -1,6 +1,6 @@
 const { Schema, model, Types } = require('mongoose');
 
-const ROLES = ['admin', 'customer', 'driver'];
+const ROLES = ['superadmin', 'admin', 'customer', 'driver'];
 
 const userSchema = new Schema(
   {
@@ -8,6 +8,7 @@ const userSchema = new Schema(
     email: { type: String, required: true, unique: true, index: true },
     passwordHash: { type: String, required: true, select: false },
     role: { type: String, enum: ROLES, default: 'customer', index: true },
+    roleName: { type: String, default: '' },
     phone: { type: String },
     cnic: { type: String, unique: true, sparse: true, index: true },
     region: { type: Types.ObjectId, ref: 'Region', index: true },

@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const { User, ROLES } = require('../models/User');
 const ADMIN_BOOTSTRAP_SECRET = process.env.ADMIN_BOOTSTRAP_SECRET || '';
+const { buildAuditFromReq } = require('../utils/auditLogger');
 
 // GET /api/admin/users
 async function list(req, res, next) {
@@ -14,9 +15,10 @@ async function list(req, res, next) {
 // body: { name, email, password, role, phone, permissions, region, cnic }
 async function create(req, res, next) {
   try {
-    const { name, email, password, role = 'customer', phone, permissions = [], region, cnic } = req.body;
+    const { name, email, password, role = 'customer', roleName = '', phone, permissions = [], region, cnic } = req.body;
     if (!name || !email || !password) return res.status(400).json({ message: 'name, email, password required' });
     if (!ROLES.includes(role)) return res.status(400).json({ message: 'invalid role' });
+    if (role === 'superadmin' && req.user?.role !== 'superadmin') return res.status(403).json({ message: 'only superadmin can assign superadmin role' });
     const exists = await User.findOne({ email });
     if (exists) return res.status(409).json({ message: 'email already exists' });
     if (cnic) {
@@ -24,7 +26,14 @@ async function create(req, res, next) {
       if (cnicExists) return res.status(409).json({ message: 'cnic already exists' });
     }
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, passwordHash, role, phone, permissions, region, cnic });
+    const user = await User.create({ name, email, passwordHash, role, roleName, phone, permissions, region, cnic });
+    // audit
+    buildAuditFromReq(req, {
+      action: 'adminUser:create',
+      entity: 'User',
+      entityId: String(user._id),
+      meta: { name, email, role, roleName, phone, permissions, region, cnic }
+    });
     res.status(201).json(user);
   } catch (err) { next(err); }
 }
@@ -35,13 +44,15 @@ async function update(req, res, next) {
   try {
     const { id } = req.params;
     const updates = {};
-    const { name, phone, role, permissions, password, region, cnic } = req.body;
+    const { name, phone, role, roleName, permissions, password, region, cnic } = req.body;
     if (name !== undefined) updates.name = name;
     if (phone !== undefined) updates.phone = phone;
     if (role !== undefined) {
       if (!ROLES.includes(role)) return res.status(400).json({ message: 'invalid role' });
+      if (role === 'superadmin' && req.user?.role !== 'superadmin') return res.status(403).json({ message: 'only superadmin can assign superadmin role' });
       updates.role = role;
     }
+    if (roleName !== undefined) updates.roleName = roleName;
     if (Array.isArray(permissions)) updates.permissions = permissions;
     if (region !== undefined) updates.region = region;
     if (password) updates.passwordHash = await bcrypt.hash(password, 10);
@@ -67,6 +78,13 @@ async function update(req, res, next) {
 
     const user = await User.findByIdAndUpdate(id, updates, { new: true });
     if (!user) return res.status(404).json({ message: 'Not found' });
+    // audit
+    buildAuditFromReq(req, {
+      action: 'adminUser:update',
+      entity: 'User',
+      entityId: String(user._id),
+      meta: { updates }
+    });
     res.json(user);
   } catch (err) { next(err); }
 }
@@ -85,6 +103,12 @@ async function remove(req, res, next) {
       if (adminCount <= 1) return res.status(400).json({ message: 'cannot delete the last admin' });
     }
      await User.findByIdAndDelete(id);
+    // audit
+    buildAuditFromReq(req, {
+      action: 'adminUser:delete',
+      entity: 'User',
+      entityId: String(id)
+    });
     res.json({ success: true });
   } catch (err) { next(err); }
 }
@@ -110,6 +134,13 @@ async function bootstrap(req, res, next) {
 
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await User.create({ name, email, passwordHash, role: 'admin', phone, permissions: [] });
+    // audit
+    buildAuditFromReq(req, {
+      action: 'adminUser:bootstrap',
+      entity: 'User',
+      entityId: String(user._id),
+      meta: { email }
+    });
     res.status(201).json(user);
   } catch (err) { next(err); }
 }

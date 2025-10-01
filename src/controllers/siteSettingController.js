@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const { SiteSetting, SETTINGS_ID } = require('../models/SiteSetting');
+const { buildAuditFromReq } = require('../utils/auditLogger');
 
 // Storage for logo uploads
 const uploadDir = path.join(process.cwd(), 'uploads');
@@ -34,18 +35,25 @@ async function update(req, res, next) {
     const {
       siteName,
       contactEmail,
-      contactPhone,
       address,
       theme,
       logoUrl,
       whatsappLink,
       whatsappPhone,
+      // About Us
+      missionStatement,
+      visionStatement,
+      ceoMessage,
+      hqAddress,
+      customerFeedbackLink,
+      socialLinks,
+      usefulLinks,
+      // Mobile apps
       customerAppName,
       customerAppLogoUrl,
       customerAppAndroidLink,
       customerAppIOSLink,
       driverAppName,
-      driverAppLogoUrl,
       driverAppAndroidLink,
       driverAppIOSLink,
     } = req.body || {};
@@ -57,6 +65,14 @@ async function update(req, res, next) {
     if (logoUrl !== undefined) updates.logoUrl = logoUrl; // allow manual URL set
     if (whatsappLink !== undefined) updates.whatsappLink = whatsappLink;
     if (whatsappPhone !== undefined) updates.whatsappPhone = whatsappPhone;
+    // About Us
+    if (missionStatement !== undefined) updates.missionStatement = missionStatement;
+    if (visionStatement !== undefined) updates.visionStatement = visionStatement;
+    if (ceoMessage !== undefined) updates.ceoMessage = ceoMessage;
+    if (hqAddress !== undefined) updates.hqAddress = hqAddress;
+    if (customerFeedbackLink !== undefined) updates.customerFeedbackLink = customerFeedbackLink;
+    if (Array.isArray(socialLinks)) updates.socialLinks = socialLinks;
+    if (Array.isArray(usefulLinks)) updates.usefulLinks = usefulLinks;
     // Mobile apps
     if (customerAppName !== undefined) updates.customerAppName = customerAppName;
     if (customerAppLogoUrl !== undefined) updates.customerAppLogoUrl = customerAppLogoUrl;
@@ -67,6 +83,13 @@ async function update(req, res, next) {
     if (driverAppAndroidLink !== undefined) updates.driverAppAndroidLink = driverAppAndroidLink;
     if (driverAppIOSLink !== undefined) updates.driverAppIOSLink = driverAppIOSLink;
     const settings = await SiteSetting.findByIdAndUpdate(SETTINGS_ID, updates, { new: true, upsert: true });
+    // audit
+    buildAuditFromReq(req, {
+      action: 'settings:update',
+      entity: 'SiteSetting',
+      entityId: String(SETTINGS_ID),
+      meta: { updates }
+    });
     res.json(settings);
   } catch (err) { next(err); }
 }
@@ -79,6 +102,13 @@ async function uploadLogo(req, res, next) {
     if (!req.file) return res.status(400).json({ message: 'logo file required' });
     const publicUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
     const settings = await SiteSetting.findByIdAndUpdate(SETTINGS_ID, { logoUrl: publicUrl }, { new: true, upsert: true });
+    // audit
+    buildAuditFromReq(req, {
+      action: 'settings:uploadLogo',
+      entity: 'SiteSetting',
+      entityId: String(SETTINGS_ID),
+      meta: { logoUrl: publicUrl }
+    });
     res.json({ logoUrl: publicUrl, settings });
   } catch (err) { next(err); }
 }
@@ -94,6 +124,13 @@ async function uploadCustomerLogo(req, res, next) {
       { customerAppLogoUrl: publicUrl },
       { new: true, upsert: true }
     );
+    // audit
+    buildAuditFromReq(req, {
+      action: 'settings:uploadCustomerLogo',
+      entity: 'SiteSetting',
+      entityId: String(SETTINGS_ID),
+      meta: { customerAppLogoUrl: publicUrl }
+    });
     res.json({ customerAppLogoUrl: publicUrl, settings });
   } catch (err) { next(err); }
 }
@@ -109,6 +146,13 @@ async function uploadDriverLogo(req, res, next) {
       { driverAppLogoUrl: publicUrl },
       { new: true, upsert: true }
     );
+    // audit
+    buildAuditFromReq(req, {
+      action: 'settings:uploadDriverLogo',
+      entity: 'SiteSetting',
+      entityId: String(SETTINGS_ID),
+      meta: { driverAppLogoUrl: publicUrl }
+    });
     res.json({ driverAppLogoUrl: publicUrl, settings });
   } catch (err) { next(err); }
 }

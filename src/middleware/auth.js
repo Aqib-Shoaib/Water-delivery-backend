@@ -34,8 +34,8 @@ function requireRole(...roles) {
 function requirePermission(permission) {
   return function (req, res, next) {
     if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
-    // Admins implicitly have all permissions
-    if (req.user.role === 'admin') return next();
+    // Superadmins implicitly have all permissions
+    if (req.user.role === 'superadmin') return next();
     const perms = Array.isArray(req.user.permissions) ? req.user.permissions : [];
     if (!perms.includes(permission)) return res.status(403).json({ message: 'Forbidden' });
     next();

@@ -7,6 +7,8 @@ const ORDER_STATUSES = [
   'delivered',   // delivered to customer
   'cancelled',   // cancelled by customer/admin
   'failed',      // failed delivery
+  'pending_payment', // awaiting payment
+  'driver_assigned', // alias-like for assigned (admin set)
 ];
 
 const orderItemSchema = new Schema(
@@ -28,6 +30,8 @@ const orderSchema = new Schema(
     region: { type: Types.ObjectId, ref: 'Region' },
     address: { type: String, required: true },
     notes: { type: String },
+    paymentStatus: { type: String, enum: ['pending','paid','refunded'], default: 'pending', index: true },
+    invoice: { type: Types.ObjectId, ref: 'Invoice' },
     // Optional: delivery window/time
     eta: { type: Date },
     deliveredAt: { type: Date },

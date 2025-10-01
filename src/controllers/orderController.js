@@ -1,5 +1,6 @@
 const { Order } = require('../models/Order');
 const { Product } = require('../models/Product');
+const { buildAuditFromReq } = require('../utils/auditLogger');
 
 const list = async (req, res, next) => {
   try {
@@ -41,7 +42,23 @@ const create = async (req, res, next) => {
       itemDocs.push({ product: product._id, quantity, unitPrice });
     }
 
-    const order = await Order.create({ customer, items: itemDocs, totalAmount, address, region, notes });
+    const order = await Order.create({
+      customer,
+      items: itemDocs,
+      totalAmount,
+      address,
+      region,
+      notes,
+      status: 'pending_payment',
+      paymentStatus: 'pending',
+    });
+    // audit
+    buildAuditFromReq(req, {
+      action: 'order:create',
+      entity: 'Order',
+      entityId: String(order._id),
+      meta: { customer, address, region, notes, totalAmount, items: itemDocs }
+    });
     res.status(201).json(order);
   } catch (err) {
     next(err);
@@ -51,8 +68,23 @@ const create = async (req, res, next) => {
 const update = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const order = await Order.findByIdAndUpdate(id, req.body, { new: true });
+    const patch = { ...req.body };
+    // auto transitions
+    if (patch.assignedDriver !== undefined) {
+      patch.status = patch.assignedDriver ? 'driver_assigned' : (patch.status || undefined);
+    }
+    if (patch.status === 'delivered') {
+      patch.deliveredAt = new Date();
+    }
+    const order = await Order.findByIdAndUpdate(id, patch, { new: true });
     if (!order) return res.status(404).json({ message: 'Not found' });
+    // audit
+    buildAuditFromReq(req, {
+      action: 'order:update',
+      entity: 'Order',
+      entityId: String(order._id),
+      meta: { update: patch }
+    });
     res.json(order);
   } catch (err) {
     next(err);

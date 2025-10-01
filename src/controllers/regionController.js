@@ -1,6 +1,7 @@
 const { Region } = require('../models/Region');
 const { User } = require('../models/User');
 const { Order } = require('../models/Order');
+const { buildAuditFromReq } = require('../utils/auditLogger');
 
 // GET /api/regions
 async function list(req, res, next) {
@@ -19,6 +20,13 @@ async function create(req, res, next) {
     const exists = await Region.findOne({ name });
     if (exists) return res.status(409).json({ message: 'Region name already exists' });
     const region = await Region.create({ name, description, zipCodes, active });
+    // audit
+    buildAuditFromReq(req, {
+      action: 'region:create',
+      entity: 'Region',
+      entityId: String(region._id),
+      meta: { name, description, zipCodes, active }
+    });
     res.status(201).json(region);
   } catch (err) { next(err); }
 }
@@ -35,6 +43,13 @@ async function update(req, res, next) {
 
     const region = await Region.findByIdAndUpdate(id, updates, { new: true });
     if (!region) return res.status(404).json({ message: 'Not found' });
+    // audit
+    buildAuditFromReq(req, {
+      action: 'region:update',
+      entity: 'Region',
+      entityId: String(region._id),
+      meta: { updates }
+    });
     res.json(region);
   } catch (err) { next(err); }
 }
@@ -51,6 +66,13 @@ async function remove(req, res, next) {
     }
     const region = await Region.findByIdAndDelete(id);
     if (!region) return res.status(404).json({ message: 'Not found' });
+    // audit
+    buildAuditFromReq(req, {
+      action: 'region:delete',
+      entity: 'Region',
+      entityId: String(region._id),
+      meta: { name: region.name }
+    });
     res.json({ success: true });
   } catch (err) { next(err); }
 }
@@ -77,6 +99,13 @@ async function assignUsers(req, res, next) {
     const filter = { _id: { $in: userIds } };
     if (role) filter.role = role;
     const result = await User.updateMany(filter, { $set: { region: id } });
+    // audit
+    buildAuditFromReq(req, {
+      action: 'region:assignUsers',
+      entity: 'Region',
+      entityId: String(id),
+      meta: { userIds, role }
+    });
     res.json({ matched: result.matchedCount ?? result.nMatched ?? 0, modified: result.modifiedCount ?? result.nModified ?? 0 });
   } catch (err) { next(err); }
 }

@@ -26,7 +26,7 @@ async function register(req, res, next) {
     }
     const passwordHash = await bcrypt.hash(password, 10);
     const total = await User.countDocuments();
-    const role = total === 0 ? 'admin' : 'customer';
+    const role = total === 0 ? 'superadmin' : 'customer';
     const user = await User.create({ name, email, passwordHash, role, cnic });
     const token = sign(user);
     res.status(201).json({ token, user: user.toJSON() });

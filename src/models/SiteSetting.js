@@ -14,6 +14,14 @@ const siteSettingSchema = new Schema(
     theme: { type: String, default: 'light' },
     whatsappLink: { type: String },
     whatsappPhone: { type: String },
+    // About Us
+    missionStatement: { type: String },
+    visionStatement: { type: String },
+    ceoMessage: { type: String },
+    hqAddress: { type: String },
+    customerFeedbackLink: { type: String },
+    socialLinks: { type: [{ label: String, icon: String, url: String }], default: [] },
+    usefulLinks: { type: [{ label: String, url: String }], default: [] },
     // Mobile apps (customer app)
     customerAppName: { type: String },
     customerAppLogoUrl: { type: String },

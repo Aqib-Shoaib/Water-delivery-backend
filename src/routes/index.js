@@ -14,6 +14,9 @@ const reminders = require('./reminders');
 const notifications = require('./notifications');
 const healthReminders = require('./healthReminders');
 const analytics = require('./analytics');
+const auditLogs = require('./auditLogs');
+const permissions = require('./permissions');
+const invoices = require('./invoices');
 
 const router = express.Router();
 
@@ -31,5 +34,9 @@ router.use('/reminders', reminders);
 router.use('/notifications', notifications);
 router.use('/health-reminders', healthReminders);
 router.use('/analytics', analytics);
+router.use('/audit-logs', auditLogs);
+router.use('/permissions', permissions);
+router.use('/invoices', invoices);
 
 module.exports = router;
+
