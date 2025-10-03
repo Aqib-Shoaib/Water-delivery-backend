@@ -53,3 +53,22 @@ async function me(req, res) {
 }
 
 module.exports = { register, login, me };
+
+// POST /api/auth/invite
+// Protected: creates an account for someone and returns a temporary password
+async function invite(req, res, next) {
+  try {
+    const { name, email, role = 'customer' } = req.body;
+    if (!name || !email) return res.status(400).json({ message: 'name and email are required' });
+    if (!ROLES.includes(role)) return res.status(400).json({ message: 'Invalid role' });
+    const existing = await User.findOne({ email }).select('_id');
+    if (existing) return res.status(409).json({ message: 'Email already in use' });
+    // generate a random temp password
+    const temp = Math.random().toString(36).slice(-10) + 'A1!';
+    const passwordHash = await bcrypt.hash(temp, 10);
+    const user = await User.create({ name, email, role, passwordHash });
+    return res.status(201).json({ user: user.toJSON(), temporaryPassword: temp });
+  } catch (err) { next(err); }
+}
+
+module.exports.invite = invite;

@@ -26,6 +26,8 @@ function authRequired() {
 function requireRole(...roles) {
   return function (req, res, next) {
     if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+    // Superadmins implicitly satisfy any role requirement
+    if (req.user.role === 'superadmin') return next();
     if (!roles.includes(req.user.role)) return res.status(403).json({ message: 'Forbidden' });
     next();
   };
