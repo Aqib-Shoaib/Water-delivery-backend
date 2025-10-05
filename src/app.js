@@ -27,7 +27,8 @@ const createApp = () => {
     optionsSuccessStatus: 204,
   };
   app.use(cors(corsOptions));
-  app.options('*', cors(corsOptions));
+  // Express 5 uses path-to-regexp@6; '*' is invalid. Use a catch-all pattern instead.
+  // app.options('/(.*)', cors(corsOptions));
 
   // JSON parser
   app.use(express.json());

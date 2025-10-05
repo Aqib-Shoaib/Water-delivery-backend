@@ -35,19 +35,12 @@ async function update(req, res, next) {
     const {
       siteName,
       contactEmail,
+      contactPhone,
       address,
       theme,
       logoUrl,
       whatsappLink,
       whatsappPhone,
-      // About Us
-      missionStatement,
-      visionStatement,
-      ceoMessage,
-      hqAddress,
-      customerFeedbackLink,
-      socialLinks,
-      usefulLinks,
       // Mobile apps
       customerAppName,
       customerAppLogoUrl,
@@ -65,14 +58,7 @@ async function update(req, res, next) {
     if (logoUrl !== undefined) updates.logoUrl = logoUrl; // allow manual URL set
     if (whatsappLink !== undefined) updates.whatsappLink = whatsappLink;
     if (whatsappPhone !== undefined) updates.whatsappPhone = whatsappPhone;
-    // About Us
-    if (missionStatement !== undefined) updates.missionStatement = missionStatement;
-    if (visionStatement !== undefined) updates.visionStatement = visionStatement;
-    if (ceoMessage !== undefined) updates.ceoMessage = ceoMessage;
-    if (hqAddress !== undefined) updates.hqAddress = hqAddress;
-    if (customerFeedbackLink !== undefined) updates.customerFeedbackLink = customerFeedbackLink;
-    if (Array.isArray(socialLinks)) updates.socialLinks = socialLinks;
-    if (Array.isArray(usefulLinks)) updates.usefulLinks = usefulLinks;
+    // About moved to standalone controller/model (no longer handled here)
     // Mobile apps
     if (customerAppName !== undefined) updates.customerAppName = customerAppName;
     if (customerAppLogoUrl !== undefined) updates.customerAppLogoUrl = customerAppLogoUrl;

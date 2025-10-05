@@ -32,6 +32,7 @@ const dutyResumptions = require('./dutyResumptions');
 const employeeAnalytics = require('./employeeAnalytics');
 const assets = require('./assets');
 const history = require('./history');
+const about = require('./about');
 
 const router = express.Router();
 
@@ -67,6 +68,7 @@ router.use('/duty-resumptions', dutyResumptions);
 router.use('/employee-analytics', employeeAnalytics);
 router.use('/assets', assets);
 router.use('/history', history);
+router.use('/about', about);
 
 module.exports = router;
 
