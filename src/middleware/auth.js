@@ -12,7 +12,7 @@ function authRequired() {
       if (!token) return res.status(401).json({ message: 'Unauthorized' });
       const payload = jwt.verify(token, JWT_SECRET);
       // fetch user to ensure still exists; select minimal fields
-      const user = await User.findById(payload.sub).select('_id name email role permissions');
+      const user = await User.findById(payload.sub).select('_id name email role permissions stars');
       if (!user) return res.status(401).json({ message: 'Unauthorized' });
       req.user = user;
       next();

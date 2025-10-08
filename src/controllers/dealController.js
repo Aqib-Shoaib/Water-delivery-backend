@@ -8,6 +8,20 @@ async function list(req, res, next) {
   } catch (err) { next(err) }
 }
 
+// Public: only active deals within date range (if provided)
+async function listPublic(req, res, next) {
+  try {
+    const now = new Date()
+    const q = { active: true, $and: [] }
+    // Only include if startDate/endDate provided
+    q.$and.push({ $or: [ { startDate: { $exists: false } }, { startDate: { $lte: now } } ] })
+    q.$and.push({ $or: [ { endDate: { $exists: false } }, { endDate: { $gte: now } } ] })
+    const filter = { active: true, $and: q.$and }
+    const items = await Deal.find(filter).sort({ createdAt: -1 }).limit(200)
+    res.json(items)
+  } catch (err) { next(err) }
+}
+
 async function create(req, res, next) {
   try {
     const { title, description, startDate, endDate, active = true } = req.body || {}
@@ -57,10 +71,9 @@ async function remove(req, res, next) {
       action: 'deal:delete',
       entity: 'Deal',
       entityId: String(id),
-      meta: { title: doc.title }
     })
     res.json({ ok: true })
   } catch (err) { next(err) }
 }
 
-module.exports = { list, create, update, remove }
+module.exports = { list, listPublic, create, update, remove }

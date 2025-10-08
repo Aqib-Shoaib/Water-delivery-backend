@@ -4,8 +4,9 @@ const { authRequired, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/', authRequired(), requirePermission('orders:read'), controller.list);
-router.post('/', authRequired(), requirePermission('orders:write'), controller.create);
+// Any authenticated user can list/create; controller filters by role
+router.get('/', authRequired(), controller.list);
+router.post('/', authRequired(), controller.create);
 router.put('/:id', authRequired(), requirePermission('orders:write'), controller.update);
 
 module.exports = router;

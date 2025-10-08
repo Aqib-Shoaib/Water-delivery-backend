@@ -11,6 +11,7 @@ const siteSettings = require('./siteSettings');
 const deals = require('./deals');
 const reminders = require('./reminders');
 const notifications = require('./notifications');
+const messages = require('./messages');
 const healthReminders = require('./healthReminders');
 const analytics = require('./analytics');
 const auditLogs = require('./auditLogs');
@@ -33,6 +34,7 @@ const employeeAnalytics = require('./employeeAnalytics');
 const assets = require('./assets');
 const history = require('./history');
 const about = require('./about');
+const customerSupport = require('./customerSupport');
 
 const router = express.Router();
 
@@ -47,6 +49,7 @@ router.use('/site-settings', siteSettings);
 router.use('/deals', deals);
 router.use('/reminders', reminders);
 router.use('/notifications', notifications);
+router.use('/messages', messages);
 router.use('/health-reminders', healthReminders);
 router.use('/analytics', analytics);
 router.use('/audit-logs', auditLogs);
@@ -69,6 +72,8 @@ router.use('/employee-analytics', employeeAnalytics);
 router.use('/assets', assets);
 router.use('/history', history);
 router.use('/about', about);
+router.use('/customer-support', customerSupport);
 
 module.exports = router;
+
 

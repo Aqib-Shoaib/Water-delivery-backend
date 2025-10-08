@@ -24,7 +24,11 @@ const list = async (req, res, next) => {
 
 const create = async (req, res, next) => {
   try {
-    const { customer, items, address, region, notes } = req.body;
+    let { customer, items, address, region, notes } = req.body;
+    // For customer role, bind order to the authenticated user to prevent spoofing
+    if (req.user?.role === 'customer') {
+      customer = req.user._id;
+    }
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: 'items required' });
     }

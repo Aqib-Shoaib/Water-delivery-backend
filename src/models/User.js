@@ -18,6 +18,7 @@ const userSchema = new Schema(
     cnic: { type: String, unique: true, sparse: true, index: true },
     region: { type: Types.ObjectId, ref: 'Region', index: true },
     permissions: { type: [String], default: [], index: true },
+    stars: { type: Number, default: 0 },
     jobTitle: { type: String },
     gender: { type: String, enum: ['male', 'female', 'other'], required: false },
     joiningDate: { type: Date },

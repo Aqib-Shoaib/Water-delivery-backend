@@ -52,7 +52,21 @@ async function me(req, res) {
   res.json({ user: req.user });
 }
 
-module.exports = { register, login, me };
+// PATCH /api/auth/me
+// body: { name?, phone?, address? }
+async function updateMe(req, res, next) {
+  try {
+    const { name, phone, address } = req.body || {};
+    const updates = {};
+    if (name !== undefined) updates.name = name;
+    if (phone !== undefined) updates.phone = phone;
+    if (address !== undefined) updates.address = address;
+    const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true });
+    res.json({ user: user.toJSON() });
+  } catch (err) { next(err); }
+}
+
+module.exports = { register, login, me, updateMe };
 
 // POST /api/auth/invite
 // Protected: creates an account for someone and returns a temporary password
