@@ -8,6 +8,7 @@ const productSchema = new Schema(
     sizeLiters: { type: Number, required: true },
     price: { type: Number, required: true, min: 0 },
     active: { type: Boolean, default: true },
+    images: { type: [String], default: [] },
   },
   { timestamps: true }
 );

@@ -8,8 +8,12 @@ const siteSettingSchema = new Schema(
     _id: { type: String, default: FIXED_ID },
     siteName: { type: String, default: 'Water Delivery' },
     logoUrl: { type: String },
+    // Legacy single fields (kept for backward compatibility in UI code and clients)
     contactEmail: { type: String },
     contactPhone: { type: String },
+    // New multi-value fields
+    emails: { type: [String], default: [] },
+    phones: { type: [String], default: [] },
     address: { type: String },
     theme: { type: String, default: 'light' },
     whatsappLink: { type: String },

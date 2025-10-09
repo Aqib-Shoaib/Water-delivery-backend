@@ -36,6 +36,8 @@ async function update(req, res, next) {
       siteName,
       contactEmail,
       contactPhone,
+      emails,
+      phones,
       address,
       theme,
       logoUrl,
@@ -47,16 +49,33 @@ async function update(req, res, next) {
       customerAppAndroidLink,
       customerAppIOSLink,
       driverAppName,
+      driverAppLogoUrl,
       driverAppAndroidLink,
       driverAppIOSLink,
     } = req.body || {};
     if (siteName !== undefined) updates.siteName = siteName;
-    if (contactEmail !== undefined) updates.contactEmail = contactEmail;
-    if (contactPhone !== undefined) updates.contactPhone = contactPhone;
+    // New arrays handling with backward compatible single fields
+    if (Array.isArray(emails)) {
+      const sanitized = emails.map(e => String(e || '').trim()).filter(Boolean);
+      updates.emails = sanitized;
+      // keep legacy single field in sync (first email)
+      updates.contactEmail = sanitized[0] || '';
+    } else if (contactEmail !== undefined) {
+      updates.contactEmail = contactEmail;
+    }
+    if (Array.isArray(phones)) {
+      const sanitizedPh = phones.map(p => String(p || '').trim()).filter(Boolean);
+      updates.phones = sanitizedPh;
+      // keep legacy single field in sync (first phone)
+      updates.contactPhone = sanitizedPh[0] || '';
+    } else if (contactPhone !== undefined) {
+      updates.contactPhone = contactPhone;
+    }
     if (address !== undefined) updates.address = address;
     if (theme !== undefined) updates.theme = theme;
     if (logoUrl !== undefined) updates.logoUrl = logoUrl; // allow manual URL set
     if (whatsappLink !== undefined) updates.whatsappLink = whatsappLink;
+    // Keep whatsappPhone only if explicitly provided (legacy support)
     if (whatsappPhone !== undefined) updates.whatsappPhone = whatsappPhone;
     // About moved to standalone controller/model (no longer handled here)
     // Mobile apps

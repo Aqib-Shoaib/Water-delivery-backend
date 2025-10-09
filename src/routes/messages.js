@@ -20,6 +20,8 @@ router.get('/:id', authRequired(), controller.getOne);
 router.post('/', authRequired(), controller.createDraft);
 router.post('/send', authRequired(), controller.sendNow);
 router.post('/schedule', authRequired(), controller.schedule);
+// Upload image for rich text body
+router.post('/upload-image', authRequired(), controller.uploadImageMiddleware, controller.uploadImage);
 
 // Update/Trash/Delete
 router.patch('/:id', authRequired(), controller.update);

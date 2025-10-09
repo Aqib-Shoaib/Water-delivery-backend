@@ -10,5 +10,7 @@ router.get('/', controller.list);
 router.post('/', authRequired(), requirePermission('products:write'), controller.create);
 router.put('/:id', authRequired(), requirePermission('products:write'), controller.update);
 router.delete('/:id', authRequired(), requirePermission('products:write'), controller.remove);
+// Upload product image
+router.post('/upload-image', authRequired(), requirePermission('products:write'), controller.uploadImageMiddleware, controller.uploadImage);
 
 module.exports = router;

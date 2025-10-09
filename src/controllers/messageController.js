@@ -1,5 +1,32 @@
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 const { Message } = require('../models/Message');
 const { Types } = require('mongoose');
+
+// Setup upload storage for message images
+const uploadDir = path.join(process.cwd(), 'uploads', 'messages');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) { cb(null, uploadDir); },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname || '') || '.png';
+    const name = 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8) + ext;
+    cb(null, name);
+  },
+});
+const upload = multer({ storage });
+
+function sanitizeHtml(html) {
+  if (typeof html !== 'string') return '';
+  // remove script/style tags and their contents
+  return html
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '')
+    .replace(/on\w+\s*=\s*"[^"]*"/gi, '')
+    .replace(/on\w+\s*=\s*'[^']*'/gi, '')
+    .replace(/on\w+\s*=\s*[^\s>]+/gi, '');
+}
 
 function asObjectIdList(list) {
   if (!Array.isArray(list)) return [];
@@ -156,7 +183,7 @@ async function createDraft(req, res, next) {
     const recipientIds = asObjectIdList(recipients);
     const msg = await Message.create({
       subject,
-      body,
+      body: sanitizeHtml(body),
       sender: req.user._id,
       recipients: recipientIds,
       status: 'draft',
@@ -175,7 +202,7 @@ async function sendNow(req, res, next) {
     const recipientIds = asObjectIdList(recipients);
     const msg = await Message.create({
       subject,
-      body,
+      body: sanitizeHtml(body),
       sender: req.user._id,
       recipients: recipientIds,
       status: 'sent',
@@ -198,7 +225,7 @@ async function schedule(req, res, next) {
     const recipientIds = asObjectIdList(recipients);
     const msg = await Message.create({
       subject,
-      body,
+      body: sanitizeHtml(body),
       sender: req.user._id,
       recipients: recipientIds,
       status: 'scheduled',
@@ -222,7 +249,7 @@ async function update(req, res, next) {
     if (msg.status === 'sent') return res.status(400).json({ message: 'Cannot update a sent message' });
 
     if (subject !== undefined) msg.subject = subject;
-    if (body !== undefined) msg.body = body;
+    if (body !== undefined) msg.body = sanitizeHtml(body);
     if (Array.isArray(recipients)) msg.recipients = asObjectIdList(recipients);
     if (scheduledAt !== undefined) {
       const when = scheduledAt ? new Date(scheduledAt) : null;
@@ -233,6 +260,16 @@ async function update(req, res, next) {
     await msg.save();
     const doc = await populateMsg(Message.findById(msg._id));
     res.json(doc);
+  } catch (err) { next(err); }
+}
+
+// Upload image for message body
+const uploadImageMiddleware = upload.single('image');
+async function uploadImage(req, res, next) {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'image file required' });
+    const publicUrl = `${req.protocol}://${req.get('host')}/uploads/messages/${req.file.filename}`;
+    return res.json({ url: publicUrl });
   } catch (err) { next(err); }
 }
 
@@ -297,4 +334,6 @@ module.exports = {
   moveToTrash,
   restoreFromTrash,
   remove,
+  uploadImage,
+  uploadImageMiddleware,
 };
