@@ -35,6 +35,7 @@ const assets = require('./assets');
 const history = require('./history');
 const about = require('./about');
 const customerSupport = require('./customerSupport');
+const payroll = require('./payroll');
 
 const router = express.Router();
 
@@ -73,6 +74,7 @@ router.use('/assets', assets);
 router.use('/history', history);
 router.use('/about', about);
 router.use('/customer-support', customerSupport);
+router.use('/payroll', payroll);
 
 module.exports = router;
 

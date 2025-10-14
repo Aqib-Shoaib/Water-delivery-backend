@@ -38,6 +38,8 @@ const userSchema = new Schema(
     companyEmail: { type: String },
     companyBelongings: { type: String },
     remarks: { type: String },
+    // List of customers referred by this employee (for referral counting)
+    referredCustomers: [{ type: Types.ObjectId, ref: 'User' }],
   },
   {
     timestamps: true,
@@ -49,5 +51,10 @@ const userSchema = new Schema(
     },
   }
 );
+
+// Virtual: isEmployee -> everyone except superadmin and customer is considered an employee
+userSchema.virtual('isEmployee').get(function () {
+  return this.role !== 'superadmin' && this.role !== 'customer';
+});
 
 module.exports = { User: model('User', userSchema), ROLES };
