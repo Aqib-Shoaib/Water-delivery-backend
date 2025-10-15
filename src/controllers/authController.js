@@ -48,19 +48,52 @@ async function login(req, res, next) {
 }
 
 // GET /api/auth/me
-async function me(req, res) {
-  res.json({ user: req.user });
+async function me(req, res, next) {
+  try {
+    const full = await User.findById(req.user._id)
+    res.json({ user: full?.toJSON?.() || req.user })
+  } catch (err) { next(err) }
 }
 
 // PATCH /api/auth/me
 // body: { name?, phone?, address? }
 async function updateMe(req, res, next) {
   try {
-    const { name, phone, address } = req.body || {};
+    const {
+      name, phone, address, firstName, lastName, dob, gender, education,
+      employeeId, cnic, cnicOrPassport, jobTitle, joiningDate, designation,
+      duties, companyPhone, companyEmail, companyBelongings, remarks,
+      department, employeeType, shiftTimings, workLocation,
+      basicSalary, allowances, deductions, status
+    } = req.body || {};
     const updates = {};
     if (name !== undefined) updates.name = name;
     if (phone !== undefined) updates.phone = phone;
     if (address !== undefined) updates.address = address;
+    if (firstName !== undefined) updates.firstName = firstName;
+    if (lastName !== undefined) updates.lastName = lastName;
+    if (dob !== undefined) updates.dob = dob;
+    if (gender !== undefined) updates.gender = gender;
+    if (education !== undefined) updates.education = education;
+    if (employeeId !== undefined) updates.employeeId = employeeId;
+    if (cnic !== undefined) updates.cnic = cnic || undefined;
+    if (cnicOrPassport !== undefined) updates.cnicOrPassport = cnicOrPassport;
+    if (jobTitle !== undefined) updates.jobTitle = jobTitle;
+    if (joiningDate !== undefined) updates.joiningDate = joiningDate;
+    if (designation !== undefined) updates.designation = designation;
+    if (duties !== undefined) updates.duties = duties;
+    if (companyPhone !== undefined) updates.companyPhone = companyPhone;
+    if (companyEmail !== undefined) updates.companyEmail = companyEmail;
+    if (companyBelongings !== undefined) updates.companyBelongings = companyBelongings;
+    if (remarks !== undefined) updates.remarks = remarks;
+    if (department !== undefined) updates.department = department;
+    if (employeeType !== undefined) updates.employeeType = employeeType;
+    if (shiftTimings !== undefined) updates.shiftTimings = shiftTimings;
+    if (workLocation !== undefined) updates.workLocation = workLocation;
+    if (basicSalary !== undefined) updates.basicSalary = basicSalary;
+    if (allowances !== undefined) updates.allowances = allowances;
+    if (deductions !== undefined) updates.deductions = deductions;
+    if (status !== undefined) updates.status = status;
     const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true });
     res.json({ user: user.toJSON() });
   } catch (err) { next(err); }
