@@ -4,15 +4,51 @@ const { buildAuditFromReq } = require('../utils/auditLogger');
 
 const list = async (req, res, next) => {
   try {
-    const query = {}
+    const baseMatch = {}
     if (req.user?.role === 'customer') {
-      query.customer = req.user._id
+      baseMatch.customer = req.user._id
     } else if (req.user?.role === 'driver') {
-      query.assignedDriver = req.user._id
+      baseMatch.assignedDriver = req.user._id
     }
-    const orders = await Order.find(query)
+
+    const q = (req.query.q || '').trim()
+    if (q) {
+      // Use aggregation to search across populated fields
+      const rows = await Order.aggregate([
+        { $match: baseMatch },
+        { $lookup: { from: 'users', localField: 'customer', foreignField: '_id', as: 'customer' } },
+        { $unwind: '$customer' },
+        { $lookup: { from: 'users', localField: 'assignedDriver', foreignField: '_id', as: 'assignedDriver' } },
+        { $unwind: { path: '$assignedDriver', preserveNullAndEmptyArrays: true } },
+        { $lookup: { from: 'users', localField: 'approvedBy', foreignField: '_id', as: 'approvedBy' } },
+        { $unwind: { path: '$approvedBy', preserveNullAndEmptyArrays: true } },
+        { $unwind: { path: '$items', preserveNullAndEmptyArrays: true } },
+        { $lookup: { from: 'products', localField: 'items.product', foreignField: '_id', as: 'prod' } },
+        { $unwind: { path: '$prod', preserveNullAndEmptyArrays: true } },
+        { $addFields: { productName: '$prod.name' } },
+        { $match: { $or: [
+          { 'customer.name': { $regex: q, $options: 'i' } },
+          { 'assignedDriver.name': { $regex: q, $options: 'i' } },
+          { productName: { $regex: q, $options: 'i' } },
+          { status: { $regex: q, $options: 'i' } },
+          { address: { $regex: q, $options: 'i' } },
+        ] } },
+        { $group: { _id: '$_id', doc: { $first: '$$ROOT' } } },
+        { $replaceRoot: { newRoot: '$doc' } },
+        { $sort: { createdAt: -1 } },
+        { $limit: 100 },
+      ])
+      // For consistency with front-end expectations, shape subdocs similarly to populate
+      return res.json(rows.map(r => ({
+        ...r,
+        items: (r.items || []).map(it => ({ ...it, product: r.prod || it.product })),
+      })))
+    }
+
+    const orders = await Order.find(baseMatch)
       .populate('customer', 'name email')
       .populate('assignedDriver', 'name email')
+      .populate('approvedBy', 'name email companyPhone')
       .populate('items.product', 'name sizeLiters price')
       .sort({ createdAt: -1 })
       .limit(100);

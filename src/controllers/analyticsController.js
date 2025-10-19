@@ -1,5 +1,6 @@
 const { Order } = require('../models/Order')
 const { User } = require('../models/User')
+const { SupportIssue } = require('../models/SupportIssue')
 
 function startOfDay(d) {
   const x = new Date(d)
@@ -174,3 +175,68 @@ async function driverInsights(req, res, next) {
 }
 
 module.exports = { summary, recentOrders, statusBreakdown, upcomingSchedules, topCustomers, driverInsights }
+
+// New: Order Management stats
+async function orderManagementStats(req, res, next) {
+  try {
+    // totals
+    const [totalOrders, cancelledOrders, codOrders, complaintsTotal, staffComplaints, productComplaints] = await Promise.all([
+      Order.countDocuments({}),
+      Order.countDocuments({ status: { $in: ['cancelled', 'failed'] } }),
+      Order.countDocuments({ paymentMethod: 'cod' }),
+      SupportIssue.countDocuments({}),
+      SupportIssue.countDocuments({ category: 'staff' }),
+      SupportIssue.countDocuments({ category: 'product' }),
+    ])
+
+    // pending orders: any status not closed
+    const pendingOrders = await Order.countDocuments({ status: { $nin: ['delivered', 'cancelled', 'failed'] } })
+
+    // on-time vs delayed among delivered with ETA
+    const deliveredPerf = await Order.aggregate([
+      { $match: { status: 'delivered', eta: { $ne: null }, deliveredAt: { $ne: null } } },
+      { $project: { ontime: { $cond: [{ $lte: ['$deliveredAt', '$eta'] }, 1, 0] } } },
+      { $group: { _id: null, ontime: { $sum: '$ontime' }, total: { $sum: 1 } } },
+    ])
+    const ontime = deliveredPerf[0]?.ontime || 0
+    const totalWithEta = deliveredPerf[0]?.total || 0
+    const delayed = totalWithEta - ontime
+
+    // satisfaction: average rating across orders that have it
+    const satisfactionAgg = await Order.aggregate([
+      { $match: { satisfaction: { $gte: 1 } } },
+      { $group: { _id: null, avg: { $avg: '$satisfaction' }, votes: { $sum: 1 } } },
+    ])
+    const satisfaction = { average: Number((satisfactionAgg[0]?.avg || 0).toFixed(2)), votes: satisfactionAgg[0]?.votes || 0 }
+
+    // hot favorite product: most ordered items by count
+    const topProductAgg = await Order.aggregate([
+      { $unwind: '$items' },
+      { $group: { _id: '$items.product', qty: { $sum: '$items.quantity' }, orders: { $sum: 1 } } },
+      { $sort: { qty: -1 } },
+      { $limit: 1 },
+      { $lookup: { from: 'products', localField: '_id', foreignField: '_id', as: 'product' } },
+      { $unwind: '$product' },
+      { $project: { _id: 0, productId: '$product._id', name: '$product.name', qty: 1, orders: 1 } },
+    ])
+    const hotFavoriteProduct = topProductAgg[0] || null
+
+    res.json({
+      totals: {
+        totalOrders,
+        totalPendingOrders: pendingOrders,
+        totalCancelledOrders: cancelledOrders,
+        totalCashOnDeliveryOrders: codOrders,
+        totalOnTimeDeliveredOrders: ontime,
+        totalDelayedOrders: delayed,
+        totalComplaints: complaintsTotal,
+        staffComplaints,
+        productComplaints,
+      },
+      satisfaction,
+      hotFavoriteProduct,
+    })
+  } catch (err) { next(err) }
+}
+
+module.exports.orderManagementStats = orderManagementStats

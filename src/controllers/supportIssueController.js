@@ -5,6 +5,8 @@ const { SupportIssue } = require('../models/SupportIssue');
 async function list(req, res, next) {
   try {
     const { status, createdBy, assignee, q } = req.query || {};
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
     const query = {};
     if (status) query.status = status;
     if (createdBy) query.createdBy = createdBy;
@@ -14,12 +16,17 @@ async function list(req, res, next) {
       { description: { $regex: q, $options: 'i' } },
     ];
 
-    const items = await SupportIssue.find(query)
+    const [total, items] = await Promise.all([
+      SupportIssue.countDocuments(query),
+      SupportIssue.find(query)
       .populate('createdBy', 'name email')
       .populate('assignee', 'name email')
       .sort({ createdAt: -1 })
-      .limit(200);
-    res.json(items);
+      .skip((page - 1) * limit)
+      .limit(limit)
+    ]);
+    const pages = Math.ceil(total / limit) || 1;
+    res.json({ items, total, page, pages, limit });
   } catch (err) { next(err); }
 }
 

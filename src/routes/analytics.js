@@ -10,5 +10,6 @@ router.get('/status-breakdown', authRequired(), requireRole('admin'), ctrl.statu
 router.get('/upcoming-schedules', authRequired(), requireRole('admin'), ctrl.upcomingSchedules)
 router.get('/top-customers', authRequired(), requireRole('admin'), ctrl.topCustomers)
 router.get('/driver-insights', authRequired(), requireRole('admin'), ctrl.driverInsights)
+router.get('/order-management-stats', authRequired(), requireRole('admin'), ctrl.orderManagementStats)
 
 module.exports = router

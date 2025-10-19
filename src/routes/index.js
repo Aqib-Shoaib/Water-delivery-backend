@@ -36,6 +36,13 @@ const history = require('./history');
 const about = require('./about');
 const customerSupport = require('./customerSupport');
 const payroll = require('./payroll');
+const financeDashboard = require('./financeDashboard');
+const expenses = require('./expenses');
+const vendors = require('./vendors');
+const bank = require('./bank');
+const purchaseOrders = require('./purchaseOrders');
+const reports = require('./reports');
+const helpCenter = require('./helpCenter');
 
 const router = express.Router();
 
@@ -73,9 +80,18 @@ router.use('/employee-analytics', employeeAnalytics);
 router.use('/assets', assets);
 router.use('/history', history);
 router.use('/about', about);
+router.use('/help-center', helpCenter);
 router.use('/customer-support', customerSupport);
 router.use('/payroll', payroll);
+// Finance module
+router.use('/finance/dashboard', financeDashboard);
+router.use('/finance/expenses', expenses);
+router.use('/finance/vendors', vendors);
+router.use('/finance/bank', bank);
+router.use('/finance/purchase-orders', purchaseOrders);
+router.use('/finance/reports', reports);
 
 module.exports = router;
+
 
 

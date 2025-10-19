@@ -35,10 +35,11 @@ exports.summary = async (req, res) => {
     const orderMatch = Object.keys(dateFilter).length ? { createdAt: dateFilter } : {};
     const paidMatch = Object.keys(dateFilter).length ? { createdAt: dateFilter, paymentStatus: 'paid' } : { paymentStatus: 'paid' };
 
-    const [completedOrders, pendingOrders, cancelledOrders, revenueAgg] = await Promise.all([
+    const [completedOrders, pendingOrders, cancelledOrders, codOrders, revenueAgg] = await Promise.all([
       Order.countDocuments({ ...orderMatch, status: 'delivered' }),
       Order.countDocuments({ ...orderMatch, status: { $in: ['placed','pending_payment','assigned','driver_assigned','en_route'] } }),
       Order.countDocuments({ ...orderMatch, status: { $in: ['cancelled','failed'] } }),
+      Order.countDocuments({ ...orderMatch, paymentMethod: 'cod' }),
       Order.aggregate([
         { $match: paidMatch },
         { $group: { _id: null, total: { $sum: '$totalAmount' } } },
@@ -46,8 +47,10 @@ exports.summary = async (req, res) => {
     ]);
 
     // Users (employees and clients)
-    const [clients, discontinuedClients, workingEmployees, rejectedEmployees, terminatedEmployees, waitingEmployees] = await Promise.all([
+    const fifteenDaysAgo = new Date(Date.now() - 15*24*60*60*1000);
+    const [clients, newClients, discontinuedClients, workingEmployees, rejectedEmployees, terminatedEmployees, waitingEmployees] = await Promise.all([
       User.countDocuments({ role: 'customer' }),
+      User.countDocuments({ role: 'customer', createdAt: { $gte: fifteenDaysAgo } }),
       Promise.resolve(0), // Not modeled yet
       User.countDocuments({ role: { $in: ['admin','driver'] }, status: 'working' }),
       Promise.resolve(0), // Not modeled yet
@@ -76,10 +79,12 @@ exports.summary = async (req, res) => {
       completedOrders,
       pendingOrders,
       cancelledOrders,
+      codOrders,
       inHandDispensers,
       outHandDispensers,
       damagedDispensers,
       clients,
+      newClients,
       discontinuedClients,
       inboundBottles,
       outboundBottles,

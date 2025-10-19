@@ -30,6 +30,11 @@ const orderSchema = new Schema(
     region: { type: Types.ObjectId, ref: 'Region' },
     address: { type: String, required: true },
     notes: { type: String },
+    // Additional fields for order management
+    paymentMethod: { type: String, enum: ['cod', 'card', 'wallet', 'bank'], default: 'cod', index: true },
+    approvedBy: { type: Types.ObjectId, ref: 'User', index: true },
+    remarks: { type: String },
+    satisfaction: { type: Number, min: 1, max: 5, index: true },
     paymentStatus: { type: String, enum: ['pending','paid','refunded'], default: 'pending', index: true },
     invoice: { type: Types.ObjectId, ref: 'Invoice' },
     // Optional: delivery window/time

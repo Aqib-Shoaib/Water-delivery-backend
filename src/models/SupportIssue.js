@@ -17,6 +17,10 @@ const supportIssueSchema = new Schema(
     assignee: { type: Schema.Types.ObjectId, ref: 'User' },
     comments: { type: [commentSchema], default: [] },
     priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
+    // Complaint categorization
+    category: { type: String, enum: ['product', 'staff', 'service', 'other'], default: 'other', index: true },
+    product: { type: Schema.Types.ObjectId, ref: 'Product' },
+    staff: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }
 );
