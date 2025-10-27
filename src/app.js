@@ -3,9 +3,12 @@ const path = require('path');
 const cors = require('cors');
 const routes = require('./routes');
 const { errorHandler } = require('./middleware/errorHandler');
-
+const morgan = require('morgan');
 const createApp = () => {
   const app = express();
+
+  // Use Morgan middleware
+  app.use(morgan('dev'));
 
   // CORS
   const allowedOrigins = [
