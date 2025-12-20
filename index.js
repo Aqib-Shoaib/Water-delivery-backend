@@ -9,11 +9,9 @@ const mongoose = require('mongoose');
     console.log('✅ MongoDB connected');
 
     const app = createApp();
-    const server = app.listen(PORT, '0.0.0.0', () => {
-      const host = process.env.HOST || '0.0.0.0';
-      console.log(`🚀 Server running on ${host}:${PORT} (reachable on LAN at http://<YOUR_PC_IP>:${PORT})`);
+    const server = app.listen(PORT, '127.0.0.1', () => {
+      console.log(`🚀 Server running on ${PORT}`);
     });
-
     process.on('SIGINT', async () => {
       console.log('Shutting down...');
       await mongoose.disconnect();
