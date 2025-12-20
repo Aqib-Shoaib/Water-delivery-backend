@@ -15,7 +15,7 @@ const createApp = () => {
     process.env.ADMIN_ORIGIN || 'http://localhost:5173',
     'http://localhost:3000',
     'http://localhost:5174',
-    'https://water-delivery-admin-panel.vercel.app',
+    'https://www.kshealthplus.site',
   ];
   const corsOptions = {
     origin: function (origin, callback) {
