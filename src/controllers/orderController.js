@@ -1,6 +1,9 @@
 const { Order } = require('../models/Order');
 const { Product } = require('../models/Product');
 const { buildAuditFromReq } = require('../utils/auditLogger');
+const { Expo } = require('expo-server-sdk');
+const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
+const expo = new Expo();
 
 const list = async (req, res, next) => {
   try {
@@ -60,7 +63,7 @@ const list = async (req, res, next) => {
 
 const create = async (req, res, next) => {
   try {
-    let { customer, items, address, region, notes } = req.body;
+    let { customer, items, address, region, notes, paymentMethod } = req.body;
     // For customer role, bind order to the authenticated user to prevent spoofing
     if (req.user?.role === 'customer') {
       customer = req.user._id;
@@ -82,16 +85,36 @@ const create = async (req, res, next) => {
       itemDocs.push({ product: product._id, quantity, unitPrice });
     }
 
-    const order = await Order.create({
+    paymentMethod = paymentMethod || 'cod';
+
+    const orderData = {
       customer,
       items: itemDocs,
       totalAmount,
       address,
       region,
       notes,
-      status: 'pending_payment',
+      paymentMethod,
+      status: paymentMethod === 'cod' ? 'placed' : 'pending_payment',
       paymentStatus: 'pending',
-    });
+    };
+
+    let clientSecret = undefined;
+    if (paymentMethod === 'card') {
+      if (!stripe) return res.status(503).json({ message: 'Payments not configured' });
+      
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(totalAmount * 100),
+        currency: 'usd',
+        automatic_payment_methods: { enabled: true },
+        metadata: { customerId: String(customer), notes },
+      });
+      
+      orderData.stripePaymentIntentId = paymentIntent.id;
+      clientSecret = paymentIntent.client_secret;
+    }
+
+    const order = await Order.create(orderData);
     // audit
     buildAuditFromReq(req, {
       action: 'order:create',
@@ -99,7 +122,7 @@ const create = async (req, res, next) => {
       entityId: String(order._id),
       meta: { customer, address, region, notes, totalAmount, items: itemDocs }
     });
-    res.status(201).json(order);
+    res.status(201).json({ ...order.toObject(), clientSecret });
   } catch (err) {
     next(err);
   }
@@ -118,6 +141,28 @@ const update = async (req, res, next) => {
     }
     const order = await Order.findByIdAndUpdate(id, patch, { new: true });
     if (!order) return res.status(404).json({ message: 'Not found' });
+
+    // Send Push Notification if status changed
+    if (patch.status && order.customer) { // customer is ID here unless populated, but findByIdAndUpdate returns doc with ID typically unless populated in pre hooks
+         try {
+             const User = require('../models/User').User; // Lazy load to avoid circular dependency if any
+             const customer = await User.findById(order.customer);
+             if (customer && customer.pushToken && Expo.isExpoPushToken(customer.pushToken)) {
+                 const messages = [{
+                     to: customer.pushToken,
+                     sound: 'default',
+                     title: 'Order Update',
+                     body: `Your order #${order._id.toString().slice(-6).toUpperCase()} is now ${patch.status.replace('_', ' ').toUpperCase()}`,
+                     data: { orderId: order._id },
+                 }];
+                 await expo.sendPushNotificationsAsync(messages);
+             }
+         } catch (err) {
+             console.error('Push Notification Error:', err);
+             // Don't block response
+         }
+    }
+
     // audit
     buildAuditFromReq(req, {
       action: 'order:update',

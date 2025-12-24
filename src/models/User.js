@@ -40,6 +40,8 @@ const userSchema = new Schema(
     remarks: { type: String },
     // List of customers referred by this employee (for referral counting)
     referredCustomers: [{ type: Types.ObjectId, ref: 'User' }],
+    pushToken: { type: String, index: true },
+    avatar: { type: String },
   },
   {
     timestamps: true,

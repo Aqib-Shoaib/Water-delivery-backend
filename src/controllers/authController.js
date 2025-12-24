@@ -1,6 +1,33 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User, ROLES } = require('../models/User');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Avatar Upload Configuration
+const uploadDir = path.join(process.cwd(), 'uploads', 'avatars');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) { cb(null, uploadDir); },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname || '') || '.png';
+    const name = 'avatar_' + req.user._id + '_' + Date.now() + ext;
+    cb(null, name);
+  },
+});
+const upload = multer({ storage });
+const uploadAvatarMiddleware = upload.single('avatar');
+
+async function uploadAvatar(req, res, next) {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'avatar file required' });
+    const publicUrl = `${req.protocol}://${req.get('host')}/uploads/avatars/${req.file.filename}`;
+    
+    const user = await User.findByIdAndUpdate(req.user._id, { avatar: publicUrl }, { new: true });
+    res.json({ user: user.toJSON(), url: publicUrl });
+  } catch (err) { next(err); }
+}
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
@@ -94,12 +121,14 @@ async function updateMe(req, res, next) {
     if (allowances !== undefined) updates.allowances = allowances;
     if (deductions !== undefined) updates.deductions = deductions;
     if (status !== undefined) updates.status = status;
+    const { pushToken } = req.body;
+    if (pushToken !== undefined) updates.pushToken = pushToken;
     const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true });
     res.json({ user: user.toJSON() });
   } catch (err) { next(err); }
 }
 
-module.exports = { register, login, me, updateMe };
+module.exports = { register, login, me, updateMe, uploadAvatar, uploadAvatarMiddleware };
 
 // POST /api/auth/invite
 // Protected: creates an account for someone and returns a temporary password

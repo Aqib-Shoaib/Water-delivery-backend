@@ -19,7 +19,20 @@ const upload = multer({ storage });
 
 const list = async (req, res, next) => {
   try {
-    const products = await Product.find({}).sort({ createdAt: -1 });
+    const { q, category } = req.query;
+    const filter = {};
+    if (q) {
+      filter.$or = [
+        { name: { $regex: q, $options: 'i' } },
+        { description: { $regex: q, $options: 'i' } },
+      ];
+    }
+    // if category logic if needed, but not requested yet.
+    
+    // active check? usually we want active products only for customers?
+    // The current controller returns all. Let's keep it simple but add search.
+    
+    const products = await Product.find(filter).sort({ createdAt: -1 });
     res.json(products);
   } catch (err) {
     next(err);

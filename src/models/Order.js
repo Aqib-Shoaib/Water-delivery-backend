@@ -40,6 +40,7 @@ const orderSchema = new Schema(
     // Optional: delivery window/time
     eta: { type: Date },
     deliveredAt: { type: Date },
+    stripePaymentIntentId: { type: String, index: true },
   },
   { timestamps: true }
 );
