@@ -9,6 +9,7 @@ async function getOne(req, res, next) {
 }
 const bcrypt = require('bcryptjs');
 const { User, ROLES } = require('../models/User');
+const { PERMISSIONS } = require('../config/permissions');
 const ADMIN_BOOTSTRAP_SECRET = process.env.ADMIN_BOOTSTRAP_SECRET || '';
 const { buildAuditFromReq } = require('../utils/auditLogger');
 
@@ -173,7 +174,7 @@ async function bootstrap(req, res, next) {
     if (exists) return res.status(409).json({ message: 'email already exists' });
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, passwordHash, role: 'admin', phone, permissions: [] });
+    const user = await User.create({ name, email, passwordHash, role: 'admin', phone, permissions: PERMISSIONS });
     // audit
     buildAuditFromReq(req, {
       action: 'adminUser:bootstrap',
