@@ -16,6 +16,7 @@ const createApp = () => {
     'http://localhost:3000',
     'http://localhost:5174',
     'https://www.kshealthplus.site',
+    'https://kshealthplus.site',
   ];
   const corsOptions = {
     origin: function (origin, callback) {
