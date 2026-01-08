@@ -155,15 +155,15 @@ async function remove(req, res, next) {
 }
 
 // POST /api/admin/users/bootstrap
-// One-time endpoint to create the first admin.
+// One-time endpoint to create the first superadmin.
 // Requirements:
-// - No existing admin user in the database
+// - No existing superadmin user in the database
 // - Body must include { secret, name, email, password, phone }
 // - secret must match process.env.ADMIN_BOOTSTRAP_SECRET
 async function bootstrap(req, res, next) {
   try {
-    const existingAdmin = await User.findOne({ role: 'admin' }).select('_id');
-    if (existingAdmin) return res.status(400).json({ message: 'admin already exists' });
+    const existingSuperadmin = await User.findOne({ role: 'superadmin' }).select('_id');
+    if (existingSuperadmin) return res.status(400).json({ message: 'superadmin already exists' });
 
     const { secret, name, email, password, phone } = req.body || {};
     if (!ADMIN_BOOTSTRAP_SECRET) return res.status(500).json({ message: 'bootstrap not configured' });
@@ -174,13 +174,13 @@ async function bootstrap(req, res, next) {
     if (exists) return res.status(409).json({ message: 'email already exists' });
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, passwordHash, role: 'admin', phone, permissions: PERMISSIONS });
+    const user = await User.create({ name, email, passwordHash, role: 'superadmin', phone });
     // audit
     buildAuditFromReq(req, {
       action: 'adminUser:bootstrap',
       entity: 'User',
       entityId: String(user._id),
-      meta: { email }
+      meta: { email, role: 'superadmin' }
     });
     res.status(201).json(user);
   } catch (err) { next(err); }
