@@ -56,7 +56,7 @@ async function register(req, res, next) {
     const role = total === 0 ? 'superadmin' : 'customer';
     const user = await User.create({ name, email, passwordHash, role, cnic });
     const token = sign(user);
-    res.status(201).json({ token, user: user.toJSON() });
+    res.status(201).json({ token, user: user });
   } catch (err) { next(err); }
 }
 
